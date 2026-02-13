@@ -1,41 +1,45 @@
 import { BaseAdapter } from '../../core/adapter-base';
 import { IUnifiedResource, IUnifiedTraceEvent } from '../../core/types';
+import { ledgerService } from '../../../services/ledger/service';
 
 /**
  * Adapter for TraceGains
- * Uses TraceGains Network API
+ * Uses TraceGains XML/API for supplier compliance
  */
 export class TraceGainsAdapter extends BaseAdapter {
   
   async validateAuth(): Promise<boolean> {
-    // API Access Key
-    return !!this.connection.credentials?.accessKey;
+    return !!this.connection.credentials?.apiKey;
   }
 
-  async refreshToken(): Promise<void> {
-    // Static keys usually
+  async refreshToken(): Promise<void> {}
+
+  async fetchData(endpoint: string): Promise<any> {
+    return {};
   }
 
-  async getResource(resourceType: string, id: string): Promise<IUnifiedResource | null> {
-    // GET /api/v1/supplier/items/{id}
-    if (resourceType === 'item_trace') {
-       return {
-         id: id,
-         remoteId: id,
-         createdAt: new Date(),
-         updatedAt: new Date(),
-         eventType: 'OBJECT',
-         action: 'ADD',
-         eventTime: new Date(),
-         bizStep: 'commissioning',
-         createdDate: new Date(),
-         rawData: { ItemId: id, Supplier: 'Supplier A' }
-       } as IUnifiedTraceEvent;
-    }
-    return null;
+  async recordTraceEvent(event: IUnifiedTraceEvent): Promise<IUnifiedResource> {
+    console.log(`[TraceGains] Verifying supplier doc ${event.id}...`);
+
+    const ledgerEntry = await ledgerService.recordEntry({
+      type: 'SUPPLIER_DOC_VERIFICATION',
+      provider: 'TRACEGAINS',
+      documentId: event.id,
+      supplierId: event.bizLocation,
+      timestamp: event.eventTime
+    });
+
+    return {
+      ...event,
+      rawData: { ledgerTxId: ledgerEntry.id }
+    };
   }
 
   async listResources(resourceType: string, params?: Record<string, any>): Promise<IUnifiedResource[]> {
-    return [];
+     return [];
+  }
+
+  async getResource(resourceType: string, id: string): Promise<IUnifiedResource | null> {
+    return null;
   }
 }

@@ -23,3 +23,11 @@ export * from './traceability/foodlogiq/adapter';
 export * from './traceability/tracegains/adapter';
 export * from './traceability/safetyculture/adapter';
 export * from './traceability/parityfactory/adapter';
+
+// CPQ
+export * from './cpq/salesforce/adapter';
+export * from './cpq/paperless_parts/adapter';
+
+// Valuation
+export * from './valuation/bizequity/adapter';
+export * from './valuation/valuadder/adapter';

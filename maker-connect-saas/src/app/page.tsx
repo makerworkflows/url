@@ -1,8 +1,8 @@
+"use client"
+
+import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-// We'll use lucide-react icons, but since we are in a server component (by default), 
-// we might need to be careful with imports if lucide-react isn't 100% server ready in all versions, 
-// but usually it is fine.
 import { 
   LayoutDashboard, 
   Network, 
@@ -11,12 +11,62 @@ import {
   LogOut,
   CheckCircle2,
   AlertCircle,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react"
+import { ConnectionModal } from "@/components/connection-modal"
+import { Toaster } from "sonner" // Ensure Toast notifications work
+
+// Types
+import { IConnection } from "@/integrations/core/types"
 
 export default function Home() {
+  const [connections, setConnections] = useState<IConnection[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const fetchConnections = async () => {
+    try {
+      const res = await fetch('/api/connections')
+      const data = await res.json()
+      setConnections(data)
+    } catch (err) {
+      console.error("Failed to fetch connections", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchConnections()
+  }, [])
+
+  const handleConnectClick = (provider: string) => {
+    setSelectedProvider(provider)
+    setIsModalOpen(true)
+  }
+
+  const handleConnectionSuccess = () => {
+    fetchConnections() // Refresh list
+  }
+
+  // Helper to find connection status
+  const getConnectionStatus = (provider: string) => {
+    const conn = connections.find(c => c.provider === provider)
+    return conn?.isActive ? 'connected' : 'disconnected'
+  }
+
   return (
     <div className="flex h-screen w-full bg-slate-50 text-slate-900 font-sans">
+      <Toaster />
+      <ConnectionModal 
+        provider={selectedProvider} 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={handleConnectionSuccess}
+      />
+
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col hidden md:flex">
         <div className="p-6 border-b border-slate-800">
@@ -56,40 +106,62 @@ export default function Home() {
             <p className="text-slate-500 mt-2">Select an ERP system to enable native, bi-directional auditing.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <IntegrationCard 
-              name="SAP S/4HANA" 
-              description="Native OData integration for materials and batch management."
-              status="connected"
-              logo="SAP"
-            />
-             <IntegrationCard 
-              name="Oracle NetSuite" 
-              description="REST API (TBA) connection for inventory and sales orders."
-              status="disconnected"
-               logo="ORACLE"
-            />
-             <IntegrationCard 
-              name="Microsoft Dynamics 365" 
-              description="Business Central OData v4 integration."
-              status="disconnected"
-               logo="MSFT"
-            />
-             <IntegrationCard 
-              name="QT9 QMS" 
-              description="Quality management system API link."
-              status="pending"
-               logo="QT9"
-            />
-            
-            {/* New Connection Placeholder */}
-             <div className="group border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer min-h-[200px]">
-                <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-4 group-hover:bg-blue-100 group-hover:text-blue-500 transition">
-                  <Plus size={24} />
-                </div>
-                <h4 className="font-semibold text-slate-600 group-hover:text-blue-700">Add Custom Connection</h4>
+          {loading ? (
+             <div className="flex justify-center py-12">
+               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
              </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <IntegrationCard 
+                name="FoodLogiQ" 
+                providerKey="foodlogiq"
+                description="Traceability and compliance management."
+                status={getConnectionStatus('foodlogiq')}
+                logo="FLQ"
+                onConnect={() => handleConnectClick('foodlogiq')}
+              />
+               <IntegrationCard 
+                name="IBM Food Trust" 
+                providerKey="ibm_food_trust"
+                description="Blockchain-based traceability."
+                status={getConnectionStatus('ibm_food_trust')}
+                logo="IBM"
+                onConnect={() => handleConnectClick('ibm_food_trust')}
+              />
+               <IntegrationCard 
+                name="Salesforce CPQ" 
+                providerKey="salesforce"
+                description="Configure, Price, Quote integration."
+                status={getConnectionStatus('salesforce')}
+                logo="SFDC"
+                onConnect={() => handleConnectClick('salesforce')}
+              />
+               <IntegrationCard 
+                name="SafetyCulture" 
+                providerKey="safetyculture"
+                description="Audits and inspections integration."
+                status={getConnectionStatus('safetyculture')}
+                logo="SC"
+                onConnect={() => handleConnectClick('safetyculture')}
+              />
+               <IntegrationCard 
+                name="TraceGains" 
+                providerKey="tracegains"
+                description="Supplier compliance and management."
+                status={getConnectionStatus('tracegains')}
+                 logo="TG"
+                 onConnect={() => handleConnectClick('tracegains')}
+              />
+              
+              {/* New Connection Placeholder */}
+               <div className="group border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer min-h-[200px]">
+                  <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-4 group-hover:bg-blue-100 group-hover:text-blue-500 transition">
+                    <Plus size={24} />
+                  </div>
+                  <h4 className="font-semibold text-slate-600 group-hover:text-blue-700">Add Custom Connection</h4>
+               </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
@@ -113,7 +185,16 @@ function NavItem({ href, icon, label, active = false }: { href: string, icon: Re
   )
 }
 
-function IntegrationCard({ name, description, status, logo }: { name: string, description: string, status: 'connected' | 'disconnected' | 'pending', logo: string }) {
+interface IntegrationCardProps {
+  name: string
+  providerKey: string
+  description: string
+  status: 'connected' | 'disconnected' | 'pending'
+  logo: string
+  onConnect: () => void
+}
+
+function IntegrationCard({ name, description, status, logo, onConnect }: IntegrationCardProps) {
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition flex flex-col h-full">
       <div className="flex items-start justify-between mb-4">
@@ -127,6 +208,7 @@ function IntegrationCard({ name, description, status, logo }: { name: string, de
       <p className="text-sm text-slate-500 mb-6 flex-1">{description}</p>
       
       <button 
+        onClick={onConnect}
         className={cn(
           "w-full py-2 px-4 rounded-lg text-sm font-medium border transition",
           status === 'connected'
