@@ -1,3 +1,4 @@
+
 import { BaseAdapter } from '../../core/adapter-base';
 import { IUnifiedResource, IUnifiedQualityEvent } from '../../core/types';
 import { ledgerService } from '../../../services/ledger/service';
@@ -60,8 +61,8 @@ export class MasterControlAdapter extends BaseAdapter {
       ...event,
       rawData: { 
         ...event.rawData, 
-        ledgerTxId: ledgerEntry.id, 
-        ledgerHash: ledgerEntry.dataHash 
+        ledgerTxId: ledgerEntry.transactionId, 
+        ledgerHash: ledgerEntry.hash 
       }
     };
   }

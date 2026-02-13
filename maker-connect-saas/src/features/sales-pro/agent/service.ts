@@ -1,85 +1,102 @@
 
-import { crmBridge } from '../crm-bridge';
-import { IUnifiedLead, IUnifiedOpportunity } from '../../../integrations/core/types';
+import { v4 as uuidv4 } from "uuid";
+import { eventBus } from "../../../services/event-bus"; // Import Event Bus
 
-export interface IAgentResponse {
-  text: string;
-  suggestedActions?: string[];
-  data?: any;
+export interface ILead {
+  id: string;
+  name: string;
+  company: string;
+  source: "HubSpot" | "Salesforce" | "Dynamics 365";
+  status: "New" | "Qualified" | "Negotiation" | "Closed Won";
+  score: number;
+  lastContact: string; // ISO date
+  emailDraft?: string;
 }
 
+const MOCK_LEADS: ILead[] = [
+  {
+    id: "LEAD-001",
+    name: "Alice Johnson",
+    company: "BioLife Pharmaceuticals",
+    source: "Salesforce",
+    status: "Qualified",
+    score: 85,
+    lastContact: "2024-03-10T10:00:00Z",
+  },
+  {
+    id: "LEAD-002",
+    name: "Bob Smith",
+    company: "NutraPure Inc.",
+    source: "HubSpot",
+    status: "New",
+    score: 45,
+    lastContact: "2024-03-09T14:30:00Z",
+  },
+   {
+    id: "LEAD-003",
+    name: "Charlie Davis",
+    company: "Peak Performance Labs",
+    source: "Dynamics 365",
+    status: "Negotiation",
+    score: 92,
+    lastContact: "2024-03-12T09:15:00Z",
+  },
+];
+
 export class SalesAgentService {
+  private leads: ILead[] = [...MOCK_LEADS];
+
+  public getLeads(): ILead[] {
+    return this.leads;
+  }
+
+  public analyzeLead(leadId: string): string {
+    const lead = this.leads.find((l) => l.id === leadId);
+    if (!lead) return "Lead not found.";
+
+    // Mock AI Analysis Logic
+    if (lead.score > 80) {
+      return `High Intent Detected. Recommend immediate demo scheduling. Key interest: 'Regulatory Compliance'.`;
+    } else if (lead.score > 50) {
+      return `Medium Intent. Nurture with case studies on ROI.`;
+    } else {
+      return `Low Intent. Verify contact details and revisit in Q3.`;
+    }
+  }
+
+  public generateOutreach(leadId: string): string {
+    const lead = this.leads.find((l) => l.id === leadId);
+    if (!lead) return "";
+
+    return `Subject: Transforming ${lead.company}'s compliance workflow\n\nHi ${lead.name},\n\nI noticed ${lead.company} is scaling production...`;
+  }
   
-  /**
-   * Analyzes a specific lead and generates insights
-   */
-  async qualifyLead(leadId: string): Promise<IAgentResponse> {
-    const leads = await crmBridge.getAllLeads();
-    const lead = leads.find(l => l.id === leadId);
-
-    if (!lead) {
-      return { text: `Lead ${leadId} not found.` };
-    }
-
-    // Mock AI Analysis
-    const isHot = (lead.score || 0) > 80;
-    const sentiment = isHot ? "High intent" : "Needs nurturing";
-    
-    return {
-      text: `Analysis for ${lead.firstName} ${lead.lastName} at ${lead.company}:\n- Score: ${lead.score}\n- Signal: ${sentiment}\n\nRecommended Action: ${isHot ? 'Schedule Demo immediately.' : 'Send whitepaper and follow up in 3 days.'}`,
-      suggestedActions: isHot ? ['Schedule Meeting', 'Send Contract'] : ['Enroll in Nurture Sequence', 'Send Case Study']
-    };
+  public async chatWithAgent(query: string): Promise<string> {
+      // Mock Natural Language Query Response
+      if (query.toLowerCase().includes("top leads")) {
+          return "Based on scoring, your top leads are Alice Johnson (85) and Charlie Davis (92). Charlie is in negotiation stage.";
+      }
+      if (query.toLowerCase().includes("follow up")) {
+          return "I've drafted 3 follow-up emails for leads in 'New' status. Would you like to review them?";
+      }
+      return "I can help you analyze leads, draft emails, or forecast revenue. Try asking 'Who should I contact today?'";
   }
 
-  /**
-   * Generates a personalized outreach email
-   */
-  async generateOutreach(leadId: string): Promise<IAgentResponse> {
-    const leads = await crmBridge.getAllLeads();
-    const lead = leads.find(l => l.id === leadId);
-
-    if (!lead) return { text: "Lead not found" };
-
-    const emailSubject = `Partnership opportunity: ${lead.company} + Maker Connect`;
-    const emailBody = `Hi ${lead.firstName},\n\nI noticed ${lead.company} is expanding its compliance operations. Based on your recent webinar attendance, I thought you might be interested in how our new Blockchain Trust Layer can automate your 21 CFR Part 11 audit trails.\n\nAre you free for a 10-minute chat this Thursday?\n\nBest,\nGuillermo`;
-
-    return {
-      text: `Draft Email generated used Context: ${lead.source}\n\nSubject: ${emailSubject}\n\nBody:\n${emailBody}`,
-      suggestedActions: ['Send via Gmail', 'Send via HubSpot', 'Edit Draft']
-    };
-  }
-
-  /**
-   * Main conversational interface for the agent
-   */
-  async chatWithAgent(query: string): Promise<IAgentResponse> {
-    const lowerQuery = query.toLowerCase();
-
-    if (lowerQuery.includes('hottest') || lowerQuery.includes('top leads')) {
-      const leads = await crmBridge.getAllLeads();
-      const topLeads = leads.filter(l => (l.score || 0) > 80);
-      
-      const list = topLeads.map(l => `- ${l.firstName} ${l.lastName} (${l.company}) [Score: ${l.score}]`).join('\n');
-      
-      return {
-        text: `Here are your hottest leads right now:\n${list}`,
-        data: topLeads
-      };
-    }
-
-    if (lowerQuery.includes('pipeline') || lowerQuery.includes('revenue')) {
-      const opps = await crmBridge.getAllOpportunities();
-      const total = opps.reduce((sum, op) => sum + op.amount, 0);
-      
-      return {
-        text: `Current Pipeline Value: $${total.toLocaleString()}.\nYou have ${opps.length} active deals in negotiation.`,
-        data: opps
-      };
-    }
-
-    return {
-      text: "I can help you analyze leads, draft emails, or check your pipeline. Try asking 'Who are my top leads?' or 'Check pipeline status'."
-    };
+  // NEW: Trigger 'Closed Won' to start manufacturing
+  public closeDeal(leadId: string) {
+      const lead = this.leads.find(l => l.id === leadId);
+      if(lead) {
+          lead.status = "Closed Won";
+          // Emit event to start production workflow
+          eventBus.publish({ 
+              type: 'SALES_DEAL_WON', 
+              payload: { 
+                  dealId: lead.id, 
+                  product: 'Protein Bar - Chocolate', // Mock product for demo
+                  quantity: 50000 
+              } 
+          });
+      }
   }
 }
 

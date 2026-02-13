@@ -1,3 +1,4 @@
+
 import { BaseAdapter } from '../../core/adapter-base';
 import { IUnifiedResource, IUnifiedTraceEvent } from '../../core/types';
 import { ledgerService } from '../../../services/ledger/service';
@@ -66,8 +67,8 @@ export class FoodLogiQAdapter extends BaseAdapter {
       ...event,
       rawData: { 
         ...event.rawData, 
-        ledgerTxId: ledgerEntry.id, 
-        ledgerHash: ledgerEntry.dataHash 
+        ledgerTxId: ledgerEntry.transactionId, 
+        ledgerHash: ledgerEntry.hash 
       }
     };
   }

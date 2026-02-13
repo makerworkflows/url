@@ -1,11 +1,14 @@
 
+import { eventBus } from "../../services/event-bus";
+
 export interface ICAPA {
   id: string;
   title: string;
-  source: "Audit" | "Customer Complaint" | "Deviation";
+  source: "Audit" | "Customer Complaint" | "Deviation" | "Batch Review";
   status: "Open" | "Investigating" | "Implementing Fix" | "Closed";
   severity: "Low" | "Medium" | "High" | "Critical";
   rootCause?: string;
+  relatedBatchId?: string;
 }
 
 const MOCK_CAPAS: ICAPA[] = [
@@ -28,8 +31,32 @@ const MOCK_CAPAS: ICAPA[] = [
 export class ImproveDriveService {
   private capas: ICAPA[] = [...MOCK_CAPAS];
 
+  constructor() {
+      // Auto-trigger investigation on batch completion
+      eventBus.subscribe((event) => {
+          if (event.type === 'BATCH_COMPLETED') {
+              // Simulate a random quality check logic for demo purposes
+               if (Math.random() > 0.5) {
+                   this.createDeviation(event.payload.batchId, "Yield Variance > 2%");
+               }
+          }
+      });
+  }
+
   public getCAPAs(): ICAPA[] {
     return this.capas;
+  }
+
+  public createDeviation(batchId: string, reason: string) {
+       const newCAPA: ICAPA = {
+          id: `CAPA-${Date.now()}`,
+          title: `Auto-Deviation: ${reason}`,
+          source: "Batch Review",
+          status: "Open",
+          severity: "Medium",
+          relatedBatchId: batchId
+      };
+      this.capas.unshift(newCAPA); // Add to top
   }
 
   public runRootCauseAnalysis(capaId: string, method: "5-Whys" | "Fishbone"): string {

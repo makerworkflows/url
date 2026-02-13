@@ -1,4 +1,6 @@
 
+import { eventBus } from "../../services/event-bus";
+
 export interface IBatchStep {
   id: string;
   instruction: string;
@@ -62,6 +64,11 @@ export class BatchRecordService {
     // Check if batch is complete
     if (batch.steps.every(s => s.completed)) {
         batch.status = "Review";
+        
+        eventBus.publish({
+            type: 'BATCH_COMPLETED',
+            payload: { batchId: batch.id, yield: 100 } // Mock yield
+        });
     }
   }
 }

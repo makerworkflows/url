@@ -37,7 +37,7 @@ export function AgentChat() {
 
     try {
       const response = await chatAction(userMsg.text);
-      setMessages(prev => [...prev, { role: 'agent', text: response.text }]);
+      setMessages(prev => [...prev, { role: 'agent', text: response }]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'agent', text: 'Sorry, I encountered an error. Please try again.' }]);
     } finally {

@@ -1,3 +1,4 @@
+
 import { BaseAdapter } from '../../core/adapter-base';
 import { IUnifiedResource, IUnifiedTraceEvent } from '../../core/types';
 import { ledgerService } from '../../../services/ledger/service';
@@ -31,7 +32,10 @@ export class TraceGainsAdapter extends BaseAdapter {
 
     return {
       ...event,
-      rawData: { ledgerTxId: ledgerEntry.id }
+      rawData: { 
+          ledgerTxId: ledgerEntry.transactionId,
+          ledgerHash: ledgerEntry.hash
+      }
     };
   }
 

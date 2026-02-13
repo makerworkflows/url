@@ -1,3 +1,4 @@
+
 import { BaseAdapter } from '../../core/adapter-base';
 import { IUnifiedResource, IUnifiedTraceEvent } from '../../core/types';
 import { ledgerService } from '../../../services/ledger/service';
@@ -33,7 +34,8 @@ export class SafetyCultureAdapter extends BaseAdapter {
       ...event,
       rawData: { 
         ...event.rawData,
-        ledgerTxId: ledgerEntry.id 
+        ledgerTxId: ledgerEntry.transactionId,
+        ledgerHash: ledgerEntry.hash
       }
     };
   }

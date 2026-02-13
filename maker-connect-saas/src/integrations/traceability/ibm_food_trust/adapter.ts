@@ -1,3 +1,4 @@
+
 import { BaseAdapter } from '../../core/adapter-base';
 import { IUnifiedResource, IUnifiedTraceEvent } from '../../core/types';
 import { ledgerService } from '../../../services/ledger/service';
@@ -37,7 +38,8 @@ export class IBMFoodTrustAdapter extends BaseAdapter {
       ...event,
       rawData: {
         upstreamLedger: 'IBM_HLF',
-        internalLedgerTxId: ledgerEntry.id
+        internalLedgerTxId: ledgerEntry.transactionId,
+        internalLedgerHash: ledgerEntry.hash
       }
     };
   }

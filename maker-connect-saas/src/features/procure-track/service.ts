@@ -1,76 +1,97 @@
 
+import { eventBus } from "../../services/event-bus";
+
+// Interfaces for Dashboard
 export interface IRequisition {
-  id: string;
-  requester: string;
-  items: { itemId: string; name: string; quantity: number; unitPrice: number }[];
-  status: 'PENDING' | 'APPROVED' | 'PO_GENERATED';
-  createdAt: Date;
+    id: string;
+    requester: string;
+    items: { name: string; quantity: number; unitPrice: number }[];
+    status: 'PENDING_APPROVAL' | 'APPROVED' | 'PO_GENERATED';
+    dateNeeded: string;
 }
 
 export interface IPurchaseOrder {
-  poNumber: string;
-  vendorId: string;
-  items: { itemId: string; quantity: number; total: number }[];
+  id: string;
+  poNumber?: string; // Dashboard expects poNumber
+  vendor?: string;
+  vendorId?: string; // Dashboard expects vendorId
+  items: { description: string; quantity: number }[];
+  status: "Draft" | "Sent" | "Received";
   totalAmount: number;
-  status: 'ISSUED';
-  generatedAt: Date;
 }
 
-// Mock Data
-const MOCK_REQUISITIONS: IRequisition[] = [
+const MOCK_POS: IPurchaseOrder[] = [
   {
-    id: 'req-001',
-    requester: 'John Doe',
-    items: [
-      { itemId: 'i1', name: 'Whey Protein', quantity: 500, unitPrice: 15.50 },
-      { itemId: 'i8', name: 'Packaging Bottles', quantity: 1000, unitPrice: 0.50 }
-    ],
-    status: 'PENDING',
-    createdAt: new Date()
+    id: "PO-1001",
+    poNumber: "PO-1001",
+    vendor: "Acme Ingredients",
+    items: [{ description: "Whey Protein", quantity: 500 }],
+    status: "Sent",
+    totalAmount: 5000,
   },
-  {
-    id: 'req-002',
-    requester: 'Jane Smith',
-    items: [
-      { itemId: 'i9', name: 'Citric Acid', quantity: 50, unitPrice: 3.50 }
-    ],
-    status: 'APPROVED',
-    createdAt: new Date()
-  }
 ];
 
-export class ProcureService {
-  
-  async getRequisitions(): Promise<IRequisition[]> {
-    return MOCK_REQUISITIONS;
+const MOCK_REQUISITIONS: IRequisition[] = [
+    {
+        id: "REQ-001",
+        requester: "Prod. Manager",
+        items: [{ name: "Whey Protein", quantity: 500, unitPrice: 15 }],
+        status: "PENDING_APPROVAL",
+        dateNeeded: "2024-04-01"
+    }
+];
+
+export class ProcureTrackService {
+  private pos: IPurchaseOrder[] = [...MOCK_POS];
+  private requisitions: IRequisition[] = [...MOCK_REQUISITIONS];
+
+  constructor() {
+      // Auto-create PO on shortage
+      eventBus.subscribe((event) => {
+          if (event.type === 'INVENTORY_SHORTAGE') {
+              this.generateAutoPO(event.payload.item, event.payload.quantity);
+          }
+      });
   }
 
-  /**
-   * Auto-generates a PO from a Requisition
-   */
-  async generatePO(requisitionId: string): Promise<IPurchaseOrder | null> {
-    const req = MOCK_REQUISITIONS.find(r => r.id === requisitionId);
-    if (!req) return null;
+  public getPOs(): IPurchaseOrder[] {
+    return this.pos;
+  }
+  
+  public async getRequisitions(): Promise<IRequisition[]> {
+      return this.requisitions;
+  }
 
-    // Simulate AI logic to select best vendor (mocked)
-    const bestVendor = 'VENDOR-XYZ-GLOBAL';
+  public async generatePO(reqId: string): Promise<IPurchaseOrder | null> {
+      const req = this.requisitions.find(r => r.id === reqId);
+      if(!req) return null;
 
-    const po: IPurchaseOrder = {
+      req.status = 'PO_GENERATED';
+      
+      const po = this.generateAutoPO(req.items[0].name, req.items[0].quantity);
+      return po;
+  }
+
+  public generateAutoPO(item: string, quantity: number): IPurchaseOrder {
+    const newPO: IPurchaseOrder = {
+      id: `PO-${Math.floor(Math.random() * 9000) + 1000}`,
       poNumber: `PO-${Date.now().toString().slice(-6)}`,
-      vendorId: bestVendor,
-      items: req.items.map(i => ({
-        itemId: i.itemId,
-        quantity: i.quantity,
-        total: i.quantity * i.unitPrice
-      })),
-      totalAmount: req.items.reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0),
-      status: 'ISSUED',
-      generatedAt: new Date()
+      vendor: "Recommended Supplier (AI)",
+      vendorId: "SUP-001",
+      items: [{ description: item, quantity }],
+      status: "Draft",
+      totalAmount: quantity * 15, // Mock price
     };
-
-    req.status = 'PO_GENERATED';
-    return po;
+    this.pos.push(newPO);
+    
+    eventBus.publish({
+        type: 'PO_CREATED',
+        payload: { poId: newPO.id, vendor: newPO.vendor || "Unknown" }
+    });
+    
+    return newPO;
   }
 }
 
-export const procureService = new ProcureService();
+export const procureTrackService = new ProcureTrackService();
+export const procureService = procureTrackService; // Alias for Dashboard
