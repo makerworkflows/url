@@ -7,19 +7,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { AlertTriangle, Factory, RefreshCw } from 'lucide-react';
-import { mrpEngine, IMaterialNeed, IProductionOrder } from '../engine';
+import { calculateNeedsAction } from '../actions';
+import { IMaterialNeed } from '../engine';
 
 export function MRPDashboard() {
   const [needs, setNeeds] = useState<IMaterialNeed[]>([]);
   const [qty, setQty] = useState(100);
 
-  const calculate = () => {
-    // Simulating a production run for 1000 units of Chocolate Bar
-    const orders: IProductionOrder[] = [
-      { orderId: 'ord-1', productSku: 'PRO-BAR-CHOCO', quantityToProduce: qty }
-    ];
-    const results = mrpEngine.calculateNeeds(orders);
-    setNeeds(results);
+  const calculate = async () => {
+    // Simulating a production run for Chocolate Bar
+    // Using Server Action for calculation
+    const results = await calculateNeedsAction('PRO-BAR-CHOCO', qty);
+    setNeeds(results as IMaterialNeed[]);
   };
 
   useEffect(() => {

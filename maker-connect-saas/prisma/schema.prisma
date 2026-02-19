@@ -39,9 +39,9 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String       @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?      @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
@@ -60,17 +60,17 @@ model VerificationToken {
 // Maker Connect Models
 model Connection {
   id          String   @id @default(cuid())
-  userId      String?  // Optional for now (single tenant mode start)
+  userId      String? // Optional for now (single tenant mode start)
   user        User?    @relation(fields: [userId], references: [id])
-  provider    String   // e.g., 'netsuite', 'foodlogiq'
-  category    String   // e.g., 'ERP', 'CRM'
-  settings    String   // JSON string of settings
-  credentials String   // Encrypted JSON string
+  provider    String // e.g., 'netsuite', 'foodlogiq'
+  category    String // e.g., 'ERP', 'CRM'
+  settings    String // JSON string of settings
+  credentials String // Encrypted JSON string
   isActive    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([provider, userId]) 
+  @@unique([provider, userId])
 }
 
 model AuditLog {
@@ -79,8 +79,169 @@ model AuditLog {
   dataHash     String
   timestamp    DateTime @default(now())
   signerId     String
-  data         String   // JSON payload of the event
+  data         String // JSON payload of the event
   signature    String
-  
+
   @@index([timestamp])
+}
+
+// --- Core Business Entities for Pilot ---
+
+// 1. Catalog & Inventory
+model Product {
+  id          String   @id @default(cuid())
+  sku         String   @unique
+  name        String
+  description String?
+  price       Float
+  cost        Float    @default(0)
+  currency    String   @default("USD")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inventory InventoryItem[]
+  bom       JobMaterial[]   @relation("BOM_Parent") // Items this product is made of? No, this is simple BOM. 
+  // Actually, let's keep it simple: A Product can be an ingredient for a Job.
+
+  // Relations
+  salesItems     SalesOrderItem[]
+  poItems        PurchaseOrderItem[]
+  productionJobs ProductionJob[] // Jobs producing this product
+}
+
+model InventoryItem {
+  id               String    @id @default(cuid())
+  productId        String
+  product          Product   @relation(fields: [productId], references: [id])
+  location         String    @default("MAIN")
+  quantityHand     Float     @default(0)
+  quantityReserved Float     @default(0)
+  reorderPoint     Float?
+  lastCountDate    DateTime?
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([productId, location])
+}
+
+// 2. Sales (CRM)
+model SalesLead {
+  id          String    @id @default(cuid())
+  remoteId    String? // ID from CRM (Salesforce/HubSpot)
+  source      String // "Salesforce", "HubSpot", "Manual"
+  name        String
+  company     String
+  email       String?
+  status      String // "New", "Qualified", "Closed Won"
+  score       Int       @default(0)
+  lastContact DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SalesOrder {
+  id          String   @id @default(cuid())
+  orderNumber String   @unique
+  customer    String
+  totalAmount Float
+  status      String // "Draft", "Confirmed", "Shipped"
+  orderDate   DateTime @default(now())
+
+  items SalesOrderItem[]
+}
+
+model SalesOrderItem {
+  id        String     @id @default(cuid())
+  orderId   String
+  order     SalesOrder @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product    @relation(fields: [productId], references: [id])
+  quantity  Float
+  unitPrice Float
+}
+
+// 3. Manufacturing (MRP & Production)
+model ProductionJob {
+  id        String    @id @default(cuid())
+  jobNumber String    @unique
+  productId String
+  product   Product   @relation(fields: [productId], references: [id])
+  quantity  Float
+  status    String // "Planned", "Released", "In Progress", "Completed"
+  startDate DateTime?
+  dueDate   DateTime?
+  createdAt DateTime  @default(now())
+
+  materials   JobMaterial[]
+  batchRecord BatchRecord?
+}
+
+model JobMaterial {
+  id          String        @id @default(cuid())
+  jobId       String
+  job         ProductionJob @relation(fields: [jobId], references: [id])
+  productId   String // Ingredient Product ID
+  product     Product       @relation("BOM_Parent", fields: [productId], references: [id]) // Re-using relationship logic
+  requiredQty Float
+  actualQty   Float?
+}
+
+model BatchRecord {
+  id          String        @id @default(cuid())
+  jobId       String        @unique
+  job         ProductionJob @relation(fields: [jobId], references: [id])
+  batchNumber String
+  status      String // "Pending", "In Progress", "Review", "Released"
+  startedAt   DateTime?
+  completedAt DateTime?
+  yield       Float?
+
+  steps BatchStep[]
+}
+
+model BatchStep {
+  id          String      @id @default(cuid())
+  batchId     String
+  batch       BatchRecord @relation(fields: [batchId], references: [id])
+  sequence    Int
+  instruction String
+  type        String // "Check", "Input", "Scan", "Signature"
+  requiredVal String?
+  actualVal   String?
+  completed   Boolean     @default(false)
+  completedBy String?
+  completedAt DateTime?
+}
+
+// 4. Procurement
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+
+  purchaseOrders PurchaseOrder[]
+}
+
+model PurchaseOrder {
+  id          String   @id @default(cuid())
+  poNumber    String   @unique
+  supplierId  String
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  totalAmount Float
+  status      String // "Draft", "Sent", "Received"
+  orderDate   DateTime @default(now())
+
+  items PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id        String        @id @default(cuid())
+  poOrderId String
+  order     PurchaseOrder @relation(fields: [poOrderId], references: [id])
+  productId String
+  product   Product       @relation(fields: [productId], references: [id])
+  quantity  Float
+  unitCost  Float
 }

@@ -7,12 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, User, Bot, Sparkles } from 'lucide-react';
-import { salesAgent } from '../agent/service'; // Note: In Next.js client component, we'd typically use a Server Action or API route
+import { chatWithAgentAction } from '../agent/actions';
 
-// Mocking server action for client demo
+// Mocking server action for client demo (Removed, using real action)
 async function chatAction(query: string) {
-  // In a real app, this would be fetch('/api/sales-agent', ...)
-  return await salesAgent.chatWithAgent(query);
+  return await chatWithAgentAction(query);
 }
 
 interface Message {
