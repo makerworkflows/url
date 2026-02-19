@@ -43,6 +43,8 @@ body {
     font-family: var(--font-main);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    width: 100%;
 }
 
 /* Utilities */
@@ -503,4 +505,27 @@ footer {
     font-size: 1rem;
     font-weight: 500;
     margin: 0;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 16px 20px;
+    }
+    
+    .logo-img {
+        height: 24px;
+        margin-right: -10px;
+    }
+
+    .btn-sm {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        white-space: nowrap;
+    }
+
+    /* Adjust gap in navbar button container */
+    nav .btn-sm:first-of-type {
+        display: none; /* Hide "Book A Call" to keep it lean and clean on small devices */
+    }
 }
