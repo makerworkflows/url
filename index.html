@@ -21,11 +21,17 @@
   <body>
     <nav class="navbar">
       <a href="#"><img src="logo.png" alt="Maker Workflows Logo" class="logo-img" /></a>
-      <div style="display: flex; gap: 10px; align-items: center">
+      <div style="display: flex; gap: 15px; align-items: center">
+        <button id="theme-toggle" style="background: transparent; border: none; cursor: pointer; color: var(--text); padding: 5px; display: flex; align-items: center; justify-content: center; border-radius: 50%; width: 32px; height: 32px; transition: background 0.2s;">
+          <!-- Moon Icon (Default Dark Mode) -->
+          <svg id="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <!-- Sun Icon (Light Mode) -->
+          <svg id="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
         <a
           href="https://calendly.com/makerworkflows/30min"
           class="btn-sm"
-          style="background: transparent; border: 1px solid #fff; color: #fff"
+          style="background: transparent; border: 1px solid var(--text); color: var(--text)"
           >Book A Call</a
         >
         <a href="https://buy.stripe.com/00wfZg83d2vzdXtfLJ87K00" class="btn-sm" style="background: #fff; color: #000; border-color: #fff; font-weight: 600;">Get Started — $3,500</a>
@@ -65,7 +71,7 @@
                 font-size: 1.1rem;
                 line-height: 1.6;
                 margin: 0;
-                color: #fff;
+                color: var(--text);
                 font-weight: 500;
               "
             >
@@ -284,7 +290,7 @@
           <a
             href="https://calendly.com/makerworkflows/30min"
             class="btn-primary"
-            style="background: transparent; border: 2px solid #fff; color: #fff"
+            style="background: transparent; border: 2px solid var(--text); color: var(--text)"
             >Book a Call</a
           >
         </div>
@@ -299,11 +305,41 @@
       <div class="container" style="display: flex; justify-content: center; align-items: center; gap: 1rem;">
         <p>&copy; 2026 Maker Workflows</p>
         <a href="https://www.linkedin.com/company/makerworkflows/" target="_blank" rel="noopener noreferrer" style="opacity: 0.6; transition: opacity 0.2s;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: white;"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text);"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
         </a>
       </div>
     </footer>
 
     <script src="script.js"></script>
+    <script>
+      const themeToggleBtn = document.getElementById('theme-toggle');
+      const moonIcon = document.getElementById('moon-icon');
+      const sunIcon = document.getElementById('sun-icon');
+      
+      // Check local storage for preference, default to dark
+      const currentTheme = localStorage.getItem('theme') || 'dark';
+      
+      if (currentTheme === 'light') {
+          document.documentElement.setAttribute('data-theme', 'light');
+          moonIcon.style.display = 'block';
+          sunIcon.style.display = 'none';
+      }
+      
+      themeToggleBtn.addEventListener('click', () => {
+          let theme = document.documentElement.getAttribute('data-theme');
+          
+          if (theme === 'light') {
+              document.documentElement.removeAttribute('data-theme');
+              localStorage.setItem('theme', 'dark');
+              moonIcon.style.display = 'none';
+              sunIcon.style.display = 'block';
+          } else {
+              document.documentElement.setAttribute('data-theme', 'light');
+              localStorage.setItem('theme', 'light');
+              moonIcon.style.display = 'block';
+              sunIcon.style.display = 'none';
+          }
+      });
+    </script>
   </body>
 </html>

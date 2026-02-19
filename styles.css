@@ -12,8 +12,19 @@
     --border: #333333;
 
     --font-main: 'Inter', system-ui, -apple-system, sans-serif;
-
     --container: 1100px;
+}
+
+[data-theme="light"] {
+    --bg: #FFFFFF;
+    --surface: #F9FAFB;
+    --surface-hover: #F3F4F6;
+    --text: #111827;
+    --text-muted: #6B7280;
+    --primary: #111827;
+    --accent: #2563EB;
+    --accent-glow: rgba(37, 99, 235, 0.2);
+    --border: #E5E7EB;
 }
 
 * {
