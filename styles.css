@@ -402,7 +402,7 @@ details p {
 }
 
 .cta p {
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     font-size: 1.25rem;
     color: var(--text-muted);
 }
